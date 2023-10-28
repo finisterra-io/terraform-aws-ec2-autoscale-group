@@ -512,3 +512,14 @@ variable "instance_reuse_policy" {
   description = "If warm pool and this block are configured, instances in the Auto Scaling group can be returned to the warm pool on scale in. The default is to terminate instances in the Auto Scaling group when the group scales in."
   default     = null
 }
+
+variable "asg_name" {
+  type        = string
+  description = "The name of the Auto Scaling group. If you do not specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the group name. For more information, see Name Type."
+}
+
+variable "launch_configuration" {
+  type        = string
+  description = "The name of the launch configuration to use for the group. Conflicts with `launch_template`."
+  default     = null
+}

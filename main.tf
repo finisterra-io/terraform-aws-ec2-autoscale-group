@@ -149,7 +149,7 @@ locals {
 resource "aws_autoscaling_group" "default" {
   count = module.this.enabled ? 1 : 0
 
-  name_prefix               = format("%s%s", module.this.id, module.this.delimiter)
+  name                      = var.asg_name
   vpc_zone_identifier       = var.subnet_ids
   max_size                  = var.max_size
   min_size                  = var.min_size
@@ -192,6 +192,8 @@ resource "aws_autoscaling_group" "default" {
       triggers = instance_refresh.value.triggers
     }
   }
+
+  launch_configuration = var.launch_configuration
 
   dynamic "launch_template" {
     for_each = (local.launch_template != null ?
