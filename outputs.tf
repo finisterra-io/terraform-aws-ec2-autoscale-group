@@ -58,12 +58,12 @@ output "autoscaling_group_health_check_type" {
   value       = one(aws_autoscaling_group.default[*].health_check_type)
 }
 
-output "autoscaling_policy_scale_down_arn" {
-  description = "ARN of the AutoScaling policy scale down"
-  value       = one(aws_autoscaling_policy.scale_down[*].arn)
-}
+# output "autoscaling_policy_scale_down_arn" {
+#   description = "ARN of the AutoScaling policy scale down"
+#   value       = one(aws_autoscaling_policy.scale_down[*].arn)
+# }
 
-output "autoscaling_policy_scale_up_arn" {
-  description = "ARN of the AutoScaling policy scale up"
-  value       = one(aws_autoscaling_policy.scale_up[*].arn)
-}
+# output "autoscaling_policy_scale_up_arn" {
+#   description = "ARN of the AutoScaling policy scale up"
+#   value       = one(aws_autoscaling_policy.scale_up[*].arn)
+# }

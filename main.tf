@@ -1,7 +1,7 @@
 resource "aws_launch_template" "default" {
-  count = module.this.enabled ? 1 : 0
+  count = module.this.enabled && var.create_aws_launch_template ? 1 : 0
 
-  name_prefix = format("%s%s", module.this.id, module.this.delimiter)
+  name = var.launch_template_name
 
   dynamic "block_device_mappings" {
     for_each = var.block_device_mappings
@@ -93,33 +93,91 @@ resource "aws_launch_template" "default" {
     enabled = var.enable_monitoring
   }
 
-  # https://github.com/terraform-providers/terraform-provider-aws/issues/4570
-  network_interfaces {
-    description                 = module.this.id
-    device_index                = 0
-    associate_public_ip_address = var.associate_public_ip_address
-    delete_on_termination       = true
-    security_groups             = var.security_group_ids
-  }
 
-  metadata_options {
-    http_endpoint               = (var.metadata_http_endpoint_enabled) ? "enabled" : "disabled"
-    http_put_response_hop_limit = var.metadata_http_put_response_hop_limit
-    http_tokens                 = (var.metadata_http_tokens_required) ? "required" : "optional"
-    http_protocol_ipv6          = (var.metadata_http_protocol_ipv6_enabled) ? "enabled" : "disabled"
-    instance_metadata_tags      = (var.metadata_instance_metadata_tags_enabled) ? "enabled" : "disabled"
-  }
-
-  dynamic "tag_specifications" {
-    for_each = var.tag_specifications_resource_types
-
+  dynamic "network_interfaces" {
+    for_each = [var.network_interfaces]
     content {
-      resource_type = tag_specifications.value
-      tags          = module.this.tags
+      description                 = module.this.id
+      device_index                = 0
+      associate_public_ip_address = var.associate_public_ip_address
+      delete_on_termination       = true
+      security_groups             = var.security_group_ids
     }
   }
 
-  tags = module.this.tags
+  dynamic "metadata_options" {
+    for_each = [var.metadata_options]
+    content {
+      http_endpoint               = lookup(metadata_options.value, "http_endpoint", null)
+      http_put_response_hop_limit = lookup(metadata_options.value, "http_put_response_hop_limit", null)
+      http_tokens                 = lookup(metadata_options.value, "http_tokens", null)
+      http_protocol_ipv6          = lookup(metadata_options.value, "http_protocol_ipv6", null)
+      instance_metadata_tags      = lookup(metadata_options.value, "instance_metadata_tags", null)
+    }
+  }
+
+  dynamic "tag_specifications" {
+    for_each = var.tag_specifications
+
+    content {
+      resource_type = tag_specifications.value.resource_type
+      tags          = tag_specifications.value.tags
+    }
+  }
+
+  tags = var.aws_launch_template_tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_launch_configuration" "default" {
+  count             = module.this.enabled && var.create_aws_launch_configuration ? 1 : 0
+  name              = var.launch_configuration_name
+  image_id          = var.image_id
+  instance_type     = var.instance_type
+  key_name          = var.key_name
+  user_data         = var.user_data_base64
+  enable_monitoring = var.enable_monitoring
+  ebs_optimized     = var.ebs_optimized
+  security_groups   = var.security_group_ids
+
+
+  dynamic "root_block_device" {
+    for_each = length(var.root_block_device) > 0 ? [var.root_block_device] : []
+    content {
+      volume_type           = lookup(root_block_device.value, "volume_type", null)
+      volume_size           = lookup(root_block_device.value, "volume_size", null)
+      delete_on_termination = lookup(root_block_device.value, "delete_on_termination", null)
+    }
+  }
+
+  dynamic "ebs_block_device" {
+    for_each = var.ebs_block_device
+    content {
+      device_name           = lookup(ebs_block_device.value, "device_name", null)
+      volume_type           = lookup(ebs_block_device.value, "volume_type", null)
+      volume_size           = lookup(ebs_block_device.value, "volume_size", null)
+      delete_on_termination = lookup(ebs_block_device.value, "delete_on_termination", null)
+    }
+  }
+
+  dynamic "ephemeral_block_device" {
+    for_each = var.ephemeral_block_device
+    content {
+      device_name  = lookup(ephemeral_block_device.value, "device_name", null)
+      virtual_name = lookup(ephemeral_block_device.value, "virtual_name", null)
+
+    }
+  }
+
+  iam_instance_profile = var.iam_instance_profile_name
+
+  spot_price = var.spot_price
+
+  placement_tenancy = var.placement_tenancy
+
 
   lifecycle {
     create_before_destroy = true
@@ -193,56 +251,56 @@ resource "aws_autoscaling_group" "default" {
     }
   }
 
-  launch_configuration = var.launch_configuration
+  launch_configuration = var.launch_configuration_name
 
-  dynamic "launch_template" {
-    for_each = (local.launch_template != null ?
-    [local.launch_template] : [])
-    content {
-      id      = local.launch_template_block.id
-      version = local.launch_template_block.version
-    }
-  }
+  # dynamic "launch_template" {
+  #   for_each = (local.launch_template != null ?
+  #   [local.launch_template] : [])
+  #   content {
+  #     id      = local.launch_template_block.id
+  #     version = local.launch_template_block.version
+  #   }
+  # }
 
-  dynamic "mixed_instances_policy" {
-    for_each = (local.mixed_instances_policy != null ?
-    [local.mixed_instances_policy] : [])
-    content {
-      dynamic "instances_distribution" {
-        for_each = (
-          mixed_instances_policy.value.instances_distribution != null ?
-        [mixed_instances_policy.value.instances_distribution] : [])
-        content {
-          on_demand_allocation_strategy = lookup(
-          instances_distribution.value, "on_demand_allocation_strategy", null)
-          on_demand_base_capacity = lookup(
-          instances_distribution.value, "on_demand_base_capacity", null)
-          on_demand_percentage_above_base_capacity = lookup(
-          instances_distribution.value, "on_demand_percentage_above_base_capacity", null)
-          spot_allocation_strategy = lookup(
-          instances_distribution.value, "spot_allocation_strategy", null)
-          spot_instance_pools = lookup(
-          instances_distribution.value, "spot_instance_pools", null)
-          spot_max_price = lookup(
-          instances_distribution.value, "spot_max_price", null)
-        }
-      }
-      launch_template {
-        launch_template_specification {
-          launch_template_id = mixed_instances_policy.value.launch_template.id
-          version            = mixed_instances_policy.value.launch_template.version
-        }
-        dynamic "override" {
-          for_each = (mixed_instances_policy.value.override != null ?
-          mixed_instances_policy.value.override : [])
-          content {
-            instance_type     = lookup(override.value, "instance_type", null)
-            weighted_capacity = lookup(override.value, "weighted_capacity", null)
-          }
-        }
-      }
-    }
-  }
+  # dynamic "mixed_instances_policy" {
+  #   for_each = (local.mixed_instances_policy != null ?
+  #   [local.mixed_instances_policy] : [])
+  #   content {
+  #     dynamic "instances_distribution" {
+  #       for_each = (
+  #         mixed_instances_policy.value.instances_distribution != null ?
+  #       [mixed_instances_policy.value.instances_distribution] : [])
+  #       content {
+  #         on_demand_allocation_strategy = lookup(
+  #         instances_distribution.value, "on_demand_allocation_strategy", null)
+  #         on_demand_base_capacity = lookup(
+  #         instances_distribution.value, "on_demand_base_capacity", null)
+  #         on_demand_percentage_above_base_capacity = lookup(
+  #         instances_distribution.value, "on_demand_percentage_above_base_capacity", null)
+  #         spot_allocation_strategy = lookup(
+  #         instances_distribution.value, "spot_allocation_strategy", null)
+  #         spot_instance_pools = lookup(
+  #         instances_distribution.value, "spot_instance_pools", null)
+  #         spot_max_price = lookup(
+  #         instances_distribution.value, "spot_max_price", null)
+  #       }
+  #     }
+  #     launch_template {
+  #       launch_template_specification {
+  #         launch_template_id = mixed_instances_policy.value.launch_template.id
+  #         version            = mixed_instances_policy.value.launch_template.version
+  #       }
+  #       dynamic "override" {
+  #         for_each = (mixed_instances_policy.value.override != null ?
+  #         mixed_instances_policy.value.override : [])
+  #         content {
+  #           instance_type     = lookup(override.value, "instance_type", null)
+  #           weighted_capacity = lookup(override.value, "weighted_capacity", null)
+  #         }
+  #       }
+  #     }
+  #   }
+  # }
 
   dynamic "warm_pool" {
     for_each = var.warm_pool != null ? [var.warm_pool] : []
@@ -260,11 +318,11 @@ resource "aws_autoscaling_group" "default" {
   }
 
   dynamic "tag" {
-    for_each = local.tags
+    for_each = var.autoscaling_group_tags != null ? var.autoscaling_group_tags : []
     content {
-      key                 = tag.key
-      value               = tag.value
-      propagate_at_launch = true
+      key                 = tag.value.key
+      value               = tag.value.value
+      propagate_at_launch = tag.value.propagate_at_launch
     }
   }
 

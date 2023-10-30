@@ -222,7 +222,7 @@ variable "health_check_type" {
 variable "force_delete" {
   type        = bool
   description = "Allows deleting the autoscaling group without waiting for all instances in the pool to terminate. You can force an autoscaling group to delete even if it's in the process of scaling a resource. Normally, Terraform drains all the instances before deleting the group. This bypasses that behavior and potentially leaves resources dangling"
-  default     = false
+  default     = null
 }
 
 variable "load_balancers" {
@@ -240,7 +240,7 @@ variable "target_group_arns" {
 variable "termination_policies" {
   description = "A list of policies to decide how the instances in the auto scale group should be terminated. The allowed values are `OldestInstance`, `NewestInstance`, `OldestLaunchConfiguration`, `ClosestToNextInstanceHour`, `Default`"
   type        = list(string)
-  default     = ["Default"]
+  default     = []
 }
 
 variable "suspended_processes" {
@@ -280,19 +280,19 @@ variable "enabled_metrics" {
 variable "wait_for_capacity_timeout" {
   type        = string
   description = "A maximum duration that Terraform should wait for ASG instances to be healthy before timing out. Setting this to '0' causes Terraform to skip all Capacity Waiting behavior"
-  default     = "10m"
+  default     = null
 }
 
 variable "min_elb_capacity" {
   type        = number
   description = "Setting this causes Terraform to wait for this number of instances to show up healthy in the ELB only on creation. Updates will not wait on ELB instance number changes"
-  default     = 0
+  default     = null
 }
 
 variable "wait_for_elb_capacity" {
   type        = number
   description = "Setting this will cause Terraform to wait for exactly this number of healthy instances in all attached load balancers on both create and update operations. Takes precedence over `min_elb_capacity` behavior"
-  default     = 0
+  default     = null
 }
 
 variable "protect_from_scale_in" {
@@ -522,4 +522,109 @@ variable "launch_configuration" {
   type        = string
   description = "The name of the launch configuration to use for the group. Conflicts with `launch_template`."
   default     = null
+}
+
+
+variable "autoscaling_policies" {
+  type        = map(any)
+  default     = {}
+  description = "Map of autoscaling policies to create"
+}
+
+variable "launch_configuration_name" {
+  type        = string
+  description = "The name of the launch configuration. If you do not specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the group name. For more information, see Name Type."
+  default     = null
+}
+
+variable "create_aws_launch_configuration" {
+  type        = bool
+  description = "Create a launch configuration for the workspace"
+  default     = false
+}
+
+variable "create_aws_launch_template" {
+  type        = bool
+  description = "Create a launch template for the workspace"
+  default     = false
+}
+
+variable "spot_price" {
+  type        = string
+  description = "The maximum price per unit hour that you are willing to pay for a Spot Instance. If you leave the value at its default (empty), AWS uses the On-Demand price as the maximum price."
+  default     = ""
+}
+
+variable "aws_launch_template_tags" {
+  type        = map(string)
+  description = "A map of tags to assign to the launch template"
+  default     = {}
+}
+
+
+variable "root_block_device" {
+  type        = map(any)
+  description = "The root block device configuration of the launch template"
+  default     = {}
+}
+
+variable "ebs_block_device" {
+  type        = list(map(any))
+  description = "The ebs block device configuration of the launch template"
+  default     = []
+}
+
+variable "ephemeral_block_device" {
+  type        = list(map(any))
+  description = "The ephemeral block device configuration of the launch template"
+  default     = []
+}
+
+variable "placement_tenancy" {
+  type        = string
+  description = "The tenancy of the instance. Valid values are `default` or `dedicated`"
+  default     = ""
+}
+
+variable "launch_template_name" {
+  type        = string
+  description = "The name of the launch template. If you do not specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the group name. For more information, see Name Type."
+  default     = null
+}
+
+
+variable "metadata_options" {
+  type        = map(any)
+  description = "The metadata options for the instance. See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template#metadata_options"
+  default     = {}
+}
+
+variable "network_interfaces" {
+  type        = list(map(any))
+  description = "The network interfaces for the instance. See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template#network_interfaces"
+  default     = []
+}
+
+variable "tag_specifications" {
+  type        = list(map(any))
+  description = "The tags to apply to the resources during launch. See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template#tag_specifications"
+  default     = []
+}
+
+variable "aws_cloudwatch_metric_alarms" {
+  type        = map(any)
+  default     = {}
+  description = "Map of CloudWatch metric alarms to create"
+}
+
+variable "user_data" {
+  type        = string
+  description = "The user data to provide when launching the instance"
+  default     = ""
+}
+
+variable "autoscaling_group_tags" {
+  type        = list(map(any))
+  description = "A map of tags to assign to the autoscaling group"
+  default     = []
 }
