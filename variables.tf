@@ -199,6 +199,7 @@ variable "min_size" {
 variable "subnet_ids" {
   description = "A list of subnet IDs to launch resources in"
   type        = list(string)
+  default     = null
 }
 
 variable "default_cooldown" {
@@ -626,5 +627,11 @@ variable "user_data" {
 variable "autoscaling_group_tags" {
   type        = list(map(any))
   description = "A map of tags to assign to the autoscaling group"
+  default     = []
+}
+
+variable "subnet_names" {
+  type        = list(string)
+  description = "A list of subnet names to launch resources in"
   default     = []
 }

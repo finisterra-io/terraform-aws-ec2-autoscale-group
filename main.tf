@@ -208,7 +208,7 @@ resource "aws_autoscaling_group" "default" {
   count = module.this.enabled ? 1 : 0
 
   name                      = var.asg_name
-  vpc_zone_identifier       = var.subnet_ids
+  vpc_zone_identifier       = coalesce(var.subnet_ids, data.aws_subnet.default[*].id, [])
   max_size                  = var.max_size
   min_size                  = var.min_size
   load_balancers            = var.load_balancers
