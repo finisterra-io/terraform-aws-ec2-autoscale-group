@@ -251,7 +251,7 @@ resource "aws_autoscaling_group" "default" {
     }
   }
 
-  launch_configuration = var.create_aws_launch_configuration ? aws_launch_configuration.default.name : null
+  launch_configuration = var.create_aws_launch_configuration ? aws_launch_configuration.default[0].name : null
 
   # dynamic "launch_template" {
   #   for_each = (local.launch_template != null ?
