@@ -5,3 +5,9 @@ data "aws_subnet" "default" {
     values = [var.subnet_names[count.index]]
   }
 }
+
+
+data "aws_security_group" "selected" {
+  count = length(var.security_group_names)
+  name  = var.security_group_names[count.index]
+}

@@ -27,11 +27,11 @@ variable "key_name" {
   default     = ""
 }
 
-variable "security_group_ids" {
-  description = "A list of associated security group IDs"
-  type        = list(string)
-  default     = []
-}
+# variable "security_group_ids" {
+#   description = "A list of associated security group IDs"
+#   type        = list(string)
+#   default     = []
+# }
 
 variable "launch_template_version" {
   type        = string
@@ -633,5 +633,11 @@ variable "autoscaling_group_tags" {
 variable "subnet_names" {
   type        = list(string)
   description = "A list of subnet names to launch resources in"
+  default     = []
+}
+
+variable "security_group_names" {
+  type        = list(string)
+  description = "A list of security group names to launch resources in"
   default     = []
 }

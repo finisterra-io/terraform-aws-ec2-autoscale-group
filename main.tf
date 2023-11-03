@@ -101,7 +101,8 @@ resource "aws_launch_template" "default" {
       device_index                = 0
       associate_public_ip_address = var.associate_public_ip_address
       delete_on_termination       = true
-      security_groups             = var.security_group_ids
+      # security_groups             = var.security_group_ids
+      security_groups = compact([for sg in data.aws_security_group.selected : sg.id])
     }
   }
 
@@ -141,7 +142,8 @@ resource "aws_launch_configuration" "default" {
   user_data         = var.user_data_base64
   enable_monitoring = var.enable_monitoring
   ebs_optimized     = var.ebs_optimized
-  security_groups   = var.security_group_ids
+  # security_groups   = var.security_group_ids
+  security_groups = compact([for sg in data.aws_security_group.selected : sg.id])
 
 
   dynamic "root_block_device" {
